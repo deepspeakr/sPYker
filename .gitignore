@@ -1,0 +1,10 @@
+/*
+/*/
+!/utility/
+/utility/__pycache__
+/utility/.DS_Store
+!csv_wrapper.py
+!proc_new_results.py
+!config.ini
+!.gitignore
+/train_clean-100/*
