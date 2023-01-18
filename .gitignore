@@ -7,4 +7,5 @@
 !proc_new_results.py
 !config.ini
 !.gitignore
+!results.txt
 /train_clean-100/*

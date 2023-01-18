@@ -52,6 +52,7 @@ def calculate_delta(array):
 
 
 def extract_features(audio, rate):
+
     mfcc_feature = mfcc.mfcc(audio, rate, 0.025, 0.01, 20, nfft=1200, appendEnergy=True)
     mfcc_feature = preprocessing.scale(mfcc_feature)
     # print(mfcc_feature)
@@ -177,7 +178,6 @@ def train_model():
     # dest = "/Users/mikolajszczesny/VSCode/python/Speaker-Identification-Using-Machine-Learning/trained_models/"
     file_paths = os.listdir(str(training_source))
     file_paths.sort()
-    print(file_paths)
     name_sample_count = DatasetManipulation.extract_name_count(training_source)
     count = 1
     features = np.asarray(())
@@ -221,7 +221,7 @@ def train_model():
 
 
 def test_model():
-
+    print("Testing models")
     # source = "/Users/mikolajszczesny/VSCode/python/Speaker-Identification-Using-Machine-Learning/testing_set/"
     # modelpath = "/Users/mikolajszczesny/VSCode/python/Speaker-Identification-Using-Machine-Learning/trained_models/"
     file_paths_test = os.listdir(testing_source)

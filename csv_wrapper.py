@@ -1,8 +1,7 @@
 import csv
 
-from utility.train_test_models import test_model, get_models
+from utility.train_test_models import test_model
 
-test_samples, winners = test_model()
 
 models = []
 result_structure = []
@@ -21,10 +20,18 @@ class Result:
     def failed(self):
         self.all += 1
 
+    def reset_object(self):
+        self.passed = 0
+        self.all = 0
 
-def generate_csv():
-    for model in get_models():
-        models.append(Result(model.split(".gmm")[0], 0, 0))
+
+def generate_csv(
+    model,
+    filename="wyniki_identyfikacji",
+):
+
+    test_samples, winners = test_model()
+    models.append(Result(model, 0, 0))
 
     for x in range(len(test_samples)):
         test_samples[x] = test_samples[x].split("-")[0]
@@ -45,7 +52,7 @@ def generate_csv():
     # for model in models:
     #     print(f"{model.id}: {model.passed}/{model.all}")
 
-    with open("wyniki_identyfikacji.csv", "w", newline="") as file:
+    with open(filename + ".csv", "w", newline="") as file:
         writer = csv.writer(file)
 
         writer.writerow(
@@ -53,7 +60,7 @@ def generate_csv():
                 "Speaker ID",
                 "liczba poprawnych detekcji",
                 "liczba testowanych plikow",
-                "udzial procentowy [%]",
+                "udzial procentowy",
             ]
         )
         for model in models:
@@ -62,8 +69,26 @@ def generate_csv():
                     model.id,
                     model.passed,
                     model.all,
-                    (model.passed / model.all) * 100,
+                    str((model.passed / model.all) * 100) + "%",
                 ]
             )
 
+        passed_cnt = 0
+        all_cnt = 0
+        for model in models:
+            passed_cnt = passed_cnt + model.passed
+            all_cnt = all_cnt + model.all
+
+        writer.writerow(["", "", "", ""])
+        writer.writerow(["", "Skutecznosc", (passed_cnt / all_cnt) * 100, ""])
+
     print("\n\nWyniki wygenerowane do pliku wyniki_identyfikacji.csv\n\n")
+
+    for model in models:
+        Result.reset_object(model)
+
+    return passed_cnt / all_cnt
+
+
+if __name__ == "__main__":
+    print("Biblioteka nie runować")

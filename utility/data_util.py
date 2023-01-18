@@ -3,13 +3,20 @@ from pydub import AudioSegment, effects
 from scipy.io.wavfile import read, write
 import numpy as np
 
+from csv_wrapper import generate_csv
+
+
+import matplotlib.pyplot as plt
+from utility.train_test_models import train_model
 
 destination = ".\\training_set\\"
-dataset = ".\\VoxCeleb10\\"
+dataset = ".\\VoxCeleb1\\"
 
 train_dest = ".\\training_set\\"
 test_dest = ".\\testing_set\\"
 trained_models = ".\\trained_models\\"
+
+success_rate_all = []
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -54,33 +61,6 @@ class DatasetControl:
                         )
                         sample_count += 1
 
-    def extract_from_subdirs_timit(dataset):
-        for speaker in os.listdir(dataset):
-            sample_count = 1
-            for speaker_sample in os.listdir(
-                    dataset + speaker + "\\"
-                ):
-                    source = (
-                        ROOT_DIR
-                        + dataset[1:]
-                        + speaker
-                        + "\\"
-                        + speaker_sample
-                    )
-                    shutil.copy(
-                        source,
-                        dataset + speaker + "\\sample" + str(sample_count) + ".wav",
-                    )
-
-                    print(
-                        dataset
-                        + speaker
-                        + "\\sample"
-                        + str(sample_count)
-                        + ".wav przetworzono!",
-                    )
-                    sample_count += 1
-
     @staticmethod
     def extract_from_subdirs_librispeech(dataset):
         for speaker in os.listdir(dataset):
@@ -113,7 +93,6 @@ class DatasetControl:
                             flac_tmp_audio_data = AudioSegment.from_file(
                                 file_path, format="flac"
                             )
-
                             flac_tmp_audio_data.export(
                                 dataset
                                 + speaker
@@ -161,7 +140,10 @@ class DatasetControl:
 
     @staticmethod
     def move_train_test_data(dataset, test_destination, train_destination):
+        with open("results.txt", "a") as file:
+            file.write("Ilosc mowcow \t Skutecznosc \n")
 
+        speaker_cnt = 1
         for speaker in os.listdir(dataset):
             if speaker == ".DS_Store":
                 continue
@@ -174,7 +156,7 @@ class DatasetControl:
                 if not os.path.isdir(dataset + speaker + "\\" + sample + "\\"):
                     samples.append(sample)
             testing_set_list = random.sample(
-                samples, Speaker.get_test_count(dataset, speaker, 5)
+                samples, Speaker.get_test_count(dataset, speaker, 10)
             )
             test_index = 1
             for test_item in testing_set_list:
@@ -194,6 +176,24 @@ class DatasetControl:
                 )
                 train_index += 1
 
+            train_model()
+
+            success_rate = generate_csv(speaker, str(speaker_cnt))
+
+            for item in os.listdir(train_dest):
+                os.remove(train_dest + item)
+
+            with open("results.txt", "a") as file:
+                file.write(f"{speaker_cnt} \t {success_rate * 100}\n")
+
+            success_rate_all.append(success_rate)
+
+            speaker_cnt += 1
+
+        print(success_rate_all)
+        plt.plot(success_rate_all)
+        plt.show()
+
     def clear_dest_dirs():
         for item in os.listdir(train_dest):
             os.remove(train_dest + item)
@@ -203,6 +203,8 @@ class DatasetControl:
 
         for item in os.listdir(test_dest):
             os.remove(test_dest + item)
+
+        os.remove("results.txt")
 
     @staticmethod
     def add_noise_SNR_destination(dest, snr):
@@ -284,19 +286,6 @@ class Speaker:
         return speakers
 
     @staticmethod
-    def count_speaker_samples_timit(dataset):
-        speakers = []
-        for speaker in os.listdir(dataset):
-            sample_count = 0
-            if speaker == ".DSStore":
-                continue
-            for _ in os.listdir(dataset + speaker + "\\"):
-                sample_count = sample_count + 1
-
-            speakers.append(Speaker(speaker, sample_count))
-        return speakers
-
-    @staticmethod
     def train_test_ratio(dataset, n):
         speakers = Speaker.count_speaker_samples(dataset)
         for x in range(len(speakers)):
@@ -315,7 +304,7 @@ class Speaker:
 
     @staticmethod
     def get_test_count(dataset, speaker, n):
-        speakers = Speaker.count_speaker_samples_timit(dataset)
+        speakers = Speaker.count_speaker_samples(dataset)
         for speak in speakers:
             if speak.id == speaker:
                 return int(speak.s_count / (n + 1))
